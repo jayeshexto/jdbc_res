@@ -1,7 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.4.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/ee/jdbc/current/mule-jdbc-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+    
+    
+    
+    <jdbc-ee:mysql-data-source name="MySQL_Data_Source" user="root" password="admin" url="jdbc:mysql://localhost:3306/test" transactionIsolation="UNSPECIFIED" doc:name="MySQL Data Source"/>
+    <jdbc-ee:connector name="Database" dataSource-ref="MySQL_Data_Source" validateConnections="true" queryTimeout="-1" pollingFrequency="0" doc:name="Database"/>
+    <flow name="jdbc_resFlow1" doc:name="jdbc_resFlow1" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
+
+Note that the flow starts with a transactional endpoint. This is critical for an RES. If RES is to be used then Mule needs to have a way to rollback to a point where the transaction began.
+
+Note how the JDBC endpoint is set to not_supported
+
+Note that log4j properties of this is set ">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM">
+            <vm:transaction action="ALWAYS_BEGIN"/>
+        </vm:inbound-endpoint>
+        <logger level="INFO" doc:name="Logger"/>
+            <jdbc-ee:outbound-endpoint exchange-pattern="one-way" queryKey="Insert" queryTimeout="-1" connector-ref="Database" doc:name="Database">
+                <jdbc-ee:transaction action="NOT_SUPPORTED"/>
+                <jdbc-ee:query key="Insert" value="insert into test.table (col1) values (1)"/>
+            </jdbc-ee:outbound-endpoint>
+        <rollback-exception-strategy maxRedeliveryAttempts="3" doc:name="Rollback Exception Strategy">
+            <logger message="***********IN ROLLBACK**********" level="INFO" doc:name="Logger"/>
+            <on-redelivery-attempts-exceeded doc:name="Redelivery exhausted">
+                <logger message="*********IN EXHAUST************" level="INFO" doc:name="Logger"/>
+            </on-redelivery-attempts-exceeded>
+        </rollback-exception-strategy>
+    </flow>
+    <flow name="jdbc_resFlow2" doc:name="jdbc_resFlow2">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" path="jdbc_res" doc:name="HTTP"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
