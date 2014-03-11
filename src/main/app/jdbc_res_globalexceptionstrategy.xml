@@ -22,7 +22,7 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
             <logger message="*********In Global Exhaust***********" level="INFO" doc:name="Logger"/>
         </on-redelivery-attempts-exceeded>
     </rollback-exception-strategy>
-    <flow name="jdbc_resFlow1_global" doc:name="jdbc_resFlow1_global" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
+    <flow name="jdbc_resFlow1_global_cl" doc:name="jdbc_resFlow1_global_cl" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES) using a Global Exception Strategy.
 
 Note that the flow starts with a transactional endpoint. This is critical for an RES. If RES is to be used then Mule needs to have a way to rollback to a point where the transaction began.
 
