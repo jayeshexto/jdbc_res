@@ -13,16 +13,23 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
     
     
     
-    <jdbc-ee:mysql-data-source name="MySQL_Data_Source" user="root" password="admin" url="jdbc:mysql://localhost:3306/test" transactionIsolation="UNSPECIFIED" doc:name="MySQL Data Source"/>
-    <jdbc-ee:connector name="Database" dataSource-ref="MySQL_Data_Source" validateConnections="true" queryTimeout="-1" pollingFrequency="0" doc:name="Database"/>
-    <flow name="jdbc_resFlow1" doc:name="jdbc_resFlow1" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
+<!--     <jdbc-ee:mysql-data-source name="MySQL_Data_Source" user="root" password="admin" url="jdbc:mysql://localhost:3306/test" transactionIsolation="UNSPECIFIED" doc:name="MySQL Data Source"/> -->
+<!--     <jdbc-ee:connector name="Database" dataSource-ref="MySQL_Data_Source" validateConnections="true" queryTimeout="-1" pollingFrequency="0" doc:name="Database"/> -->
+   
+    <rollback-exception-strategy name="Global_Rollback_Exception_Strategy">
+        <logger message="*******In Global redelivery****************" level="INFO" doc:name="Logger"/>
+        <on-redelivery-attempts-exceeded doc:name="Redelivery exhausted">
+            <logger message="*********In Global Exhaust***********" level="INFO" doc:name="Logger"/>
+        </on-redelivery-attempts-exceeded>
+    </rollback-exception-strategy>
+    <flow name="jdbc_resFlow1_global" doc:name="jdbc_resFlow1_global" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
 
 Note that the flow starts with a transactional endpoint. This is critical for an RES. If RES is to be used then Mule needs to have a way to rollback to a point where the transaction began.
 
 Note how the JDBC endpoint is set to not_supported
 
 Note that log4j properties of this project is set ">
-        <vm:inbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="VMInboundGlobal" doc:name="VM">
             <vm:transaction action="ALWAYS_BEGIN"/>
         </vm:inbound-endpoint>
         <logger level="INFO" doc:name="Logger"/>
@@ -30,16 +37,11 @@ Note that log4j properties of this project is set ">
                 <jdbc-ee:transaction action="NOT_SUPPORTED"/>
                 <jdbc-ee:query key="Insert" value="insert into test.table (col1) values (1)"/>
             </jdbc-ee:outbound-endpoint>
-        <rollback-exception-strategy maxRedeliveryAttempts="3" doc:name="Rollback Exception Strategy">
-            <logger message="***********IN ROLLBACK**********" level="INFO" doc:name="Logger"/>
-            <on-redelivery-attempts-exceeded doc:name="Redelivery exhausted">
-                <logger message="*********IN EXHAUST************" level="INFO" doc:name="Logger"/>
-            </on-redelivery-attempts-exceeded>
-        </rollback-exception-strategy>
+        <exception-strategy ref="Global_Rollback_Exception_Strategy" doc:name="Reference Exception Strategy"/>
     </flow>
-    <flow name="jdbc_resFlow2" doc:name="jdbc_resFlow2">
-        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" path="jdbc_res" doc:name="HTTP"/>
-        <vm:outbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM"/>
+    <flow name="jdbc_resFlow2_global" doc:name="jdbc_resFlow2_global">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" path="jdbc_res_global" doc:name="HTTP"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="VMInboundGlobal" doc:name="VM"/>
         <logger level="INFO" doc:name="Logger"/>
-    </flow>
+   </flow>
 </mule>
