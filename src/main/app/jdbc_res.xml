@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+<mule xmlns:https="http://www.mulesoft.org/schema/mule/https" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.4.1"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/ee/jdbc/current/mule-jdbc-ee.xsd
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
@@ -15,20 +16,27 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
     
     <jdbc-ee:mysql-data-source name="MySQL_Data_Source" user="root" password="admin" url="jdbc:mysql://localhost:3306/test" transactionIsolation="UNSPECIFIED" doc:name="MySQL Data Source"/>
     <jdbc-ee:connector name="Database" dataSource-ref="MySQL_Data_Source" validateConnections="true" queryTimeout="-1" pollingFrequency="0" doc:name="Database"/>
-    <flow name="jdbc_resFlow1" doc:name="jdbc_resFlow1" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
-
+    <http:connector name="HTTP_Connector" cookieSpec="netscape" validateConnections="true" sendBufferSize="0" receiveBufferSize="0" receiveBacklog="0" clientSoTimeout="10000" serverSoTimeout="10000" socketSoLinger="0" doc:name="HTTP\HTTPS">
+    
+<!--     poolExhaustedAction="WAIT" threadTTL="2000" maxBufferSize="2" -->
+<!--      <receiver-threading-profile maxThreadsActive="2"   />  -->
+<!--      <dispatcher-threading-profile maxThreadsActive="2" maxBufferSize="0"/> -->
+    </http:connector>
+    
+    
+    <flow name="VMInbound" doc:name="VMInbound" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
 Note that the flow starts with a transactional endpoint. This is critical for an RES. If RES is to be used then Mule needs to have a way to rollback to a point where the transaction began.
-
 Note how the JDBC endpoint is set to not_supported
+Note that log4j properties of this project is set " >
 
-Note that log4j properties of this project is set ">
-        <vm:inbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM" >
+        
             <vm:transaction action="ALWAYS_BEGIN"/>
         </vm:inbound-endpoint>
-        <logger level="INFO" doc:name="Logger"/>
+        <logger level="INFO" doc:name="Logger" message="****IN VM Flow**** #[function:"/>
             <jdbc-ee:outbound-endpoint exchange-pattern="one-way" queryKey="Insert" queryTimeout="-1" connector-ref="Database" doc:name="Database">
                 <jdbc-ee:transaction action="NOT_SUPPORTED"/>
-                <jdbc-ee:query key="Insert" value="insert into test.table (col1) values (1)"/>
+            <jdbc-ee:query key="Insert" value="insert into test.table (col1) values (#[function:dateStamp])"/>
             </jdbc-ee:outbound-endpoint>
         <rollback-exception-strategy maxRedeliveryAttempts="3" doc:name="Rollback Exception Strategy">
             <logger message="***********IN ROLLBACK**********" level="INFO" doc:name="Logger"/>
@@ -37,9 +45,16 @@ Note that log4j properties of this project is set ">
             </on-redelivery-attempts-exceeded>
         </rollback-exception-strategy>
     </flow>
-    <flow name="jdbc_resFlow2" doc:name="jdbc_resFlow2">
-        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" path="jdbc_res" doc:name="HTTP"/>
+    
+    <flow name="RollbackExample" doc:name="RollbackExample">
+        <http:inbound-endpoint connector-ref="HTTP_Connector" exchange-pattern="request-response" host="localhost" port="9084" path="rollback" doc:name="HTTP"/>
         <vm:outbound-endpoint exchange-pattern="one-way" path="VMInbound" doc:name="VM"/>
-        <logger level="INFO" doc:name="Logger"/>
+        <set-payload value="#['his is the response']" doc:name="Set response"/>
+        <logger level="INFO" doc:name="Logger" message="**************Response***************"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy enableNotifications="false" doc:name="Catch Exception Strategy">
+                <logger message="Exception is  #[message.exception]" level="INFO" doc:name="Logger"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
     </flow>
 </mule>
