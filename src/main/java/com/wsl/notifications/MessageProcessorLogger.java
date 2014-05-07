@@ -16,11 +16,17 @@ public class MessageProcessorLogger implements
 	
 	@Override
 	public void onNotification(MessageProcessorNotification notification) {
-		// TODO Auto-generated method stub
-		currentFlowName = 	notification.getResourceIdentifier();
-		MessageProcessor messageProcessor = ((MessageProcessorNotification) notification).getProcessor();
-		logger.info("MessageProcessor:" + messageProcessor.getClass().toString()+":::"+ currentFlowName);
 		
+		currentFlowName = 	notification.getResourceIdentifier();
+	
+		logger.info("ActionName:::"+notification.getActionName());
+		logger.info("Event ID:::"+notification.getSource().getId());
+		try {
+			logger.info("Payload :::" + notification.getSource().getMessage().getPayloadAsString());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 

@@ -6,13 +6,17 @@ http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
     <spring:beans>
-    <spring:bean name="externalCallsNotificationLogger" class="com.wsl.notifications.MessageProcessorLogger"/>
+    <spring:bean name="messageProcessorNotificationLogger" class="com.wsl.notifications.MessageProcessorLogger"/>
+    <spring:bean name="endPointMessageLogger" class="com.wsl.notifications.EndpointMessageLogger" />
     </spring:beans>
     <notifications>
-    	<notification event="MESSAGE-PROCESSOR" />
-    	<notification-listener ref="externalCallsNotificationLogger" />
+<!--     	<disable-notification interface="ENDPOINT-MESSAGE" /> -->
+<!--      	<disable-notification interface="ROUTING" /> -->
+<!--      	<notification event="ENDPOINT-MESSAGE" event-class="com.wsl.notifications.EndpointMessageLogger" interface="ENDPOINT-MESSAGE"/> -->
+<!--      	<notification-listener ref="messageProcessorNotificationLogger" /> -->
+<!--     	<notification-listener ref="endPointMessageLogger" /> -->
     </notifications>
-    
+  
     <jdbc-ee:mysql-data-source name="Cluster_MySQL_Data_Source" user="root" password="admin" url="jdbc:mysql://localhost:3306/test" transactionIsolation="UNSPECIFIED" doc:name="MySQL Data Source"/>
     <jdbc-ee:connector name="Cluster_Database" dataSource-ref="Cluster_MySQL_Data_Source" validateConnections="true" queryTimeout="-1" pollingFrequency="0" doc:name="Database"/>
     <http:connector name="Cluster_HTTP_Connector" cookieSpec="netscape" validateConnections="true" sendBufferSize="0" receiveBufferSize="0" receiveBacklog="0" clientSoTimeout="10000" serverSoTimeout="10000" socketSoLinger="0" doc:name="HTTP\HTTPS"/>
@@ -21,7 +25,8 @@ http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/cor
     <flow name="Cluster_VMInbound" doc:name="VMInbound" doc:description="The usescase was to demonstrate a working example of Rollback Exception Strategy(RES).
 Note that the flow starts with a transactional endpoint. This is critical for an RES. If RES is to be used then Mule needs to have a way to rollback to a point where the transaction began.
 Note how the JDBC endpoint is set to not_supported
-Note that log4j properties of this project is set ">
+Note that log4j properties of this project is set 
+Note that this flow uses Notification listeners ">
         <vm:inbound-endpoint exchange-pattern="one-way" path="Cluster_VMInbound" doc:name="VM">
             <vm:transaction action="ALWAYS_BEGIN"/>
         </vm:inbound-endpoint>
